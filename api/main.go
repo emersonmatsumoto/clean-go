@@ -11,6 +11,7 @@ import (
 	"github.com/emersonmatsumoto/clean-go/orders"
 	"github.com/emersonmatsumoto/clean-go/payments"
 	"github.com/emersonmatsumoto/clean-go/products"
+	"github.com/emersonmatsumoto/clean-go/users"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -31,10 +32,11 @@ func main() {
 		log.Fatal("STRIPE_KEY não foi configurada nas variáveis de ambiente")
 	}
 
+	userComp := users.NewComponent(client)
 	productComp := products.NewComponent(client)
 	paymentComp := payments.NewComponent(stripeKey)
 
-	orderComp := orders.NewComponent(client, productComp, paymentComp)
+	orderComp := orders.NewComponent(client, productComp, paymentComp, userComp)
 
 	http.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

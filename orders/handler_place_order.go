@@ -12,6 +12,7 @@ type OrderItemInput struct {
 }
 
 type PlaceOrderInput struct {
+	UserID    string           `json:"user_id"`
 	Items     []OrderItemInput `json:"items"`
 	CardToken string           `json:"card_token"`
 }
@@ -38,7 +39,7 @@ func (c *component) PlaceOrder(in PlaceOrderInput) (PlaceOrderOutput, error) {
 		})
 	}
 
-	order, err := c.createUC.Execute(itemsToProcess, in.CardToken)
+	order, err := c.createUC.Execute(in.UserID, itemsToProcess, in.CardToken)
 	if err != nil {
 		return PlaceOrderOutput{}, err
 	}

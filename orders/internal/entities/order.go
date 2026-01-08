@@ -9,15 +9,17 @@ type OrderItem struct {
 }
 
 type Order struct {
-	ID            string
-	Items         []OrderItem
-	Total         float64
-	Status        string
-	TransactionID string
-	CreatedAt     time.Time
+	ID              string
+	UserID          string
+	Items           []OrderItem
+	Total           float64
+	ShippingAddress string
+	Status          string
+	TransactionID   string
+	CreatedAt       time.Time
 }
 
-func NewOrder(items []OrderItem) *Order {
+func NewOrder(userID string, items []OrderItem, shippingAddress string) *Order {
 	order := &Order{
 		Items:     items,
 		Status:    "PENDING",
