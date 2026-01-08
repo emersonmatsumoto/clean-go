@@ -5,23 +5,20 @@ import (
 	"fmt"
 
 	"github.com/emersonmatsumoto/clean-go/orders/internal/entities"
+	"github.com/emersonmatsumoto/clean-go/orders/internal/ports"
 	"github.com/emersonmatsumoto/clean-go/payments"
 	"github.com/emersonmatsumoto/clean-go/products"
 	"github.com/emersonmatsumoto/clean-go/users"
 )
 
-type Repository interface {
-	Save(order *entities.Order) error
-}
-
 type CreateOrderUseCase struct {
-	repo     Repository
+	repo     ports.OrderRepository
 	prodComp products.Component
 	payComp  payments.Component
 	userComp users.Component
 }
 
-func NewCreateOrderUseCase(r Repository, p products.Component, pay payments.Component, user users.Component) *CreateOrderUseCase {
+func NewCreateOrderUseCase(r ports.OrderRepository, p products.Component, pay payments.Component, user users.Component) *CreateOrderUseCase {
 	return &CreateOrderUseCase{repo: r, prodComp: p, payComp: pay, userComp: user}
 }
 

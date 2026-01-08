@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/emersonmatsumoto/clean-go/orders/internal/entities"
+	"github.com/emersonmatsumoto/clean-go/orders/internal/ports"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type MongoRepo struct {
+type mongoRepo struct {
 	collection *mongo.Collection
 }
 
@@ -20,21 +21,23 @@ type orderItemModel struct {
 }
 
 type orderModel struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty"`
-	Items         []orderItemModel   `bson:"items"`
-	Total         float64            `bson:"total"`
-	Status        string             `bson:"status"`
-	TransactionID string             `bson:"transaction_id"`
-	CreatedAt     time.Time          `bson:"created_at"`
+	ID              primitive.ObjectID `bson:"_id,omitempty"`
+	Items           []orderItemModel   `bson:"items"`
+	Total           float64            `bson:"total"`
+	Status          string             `bson:"status"`
+	ShippingAddress string             `bson:"shipping_address"`
+	TransactionID   string             `bson:"transaction_id"`
+	UserID          string             `bson:"user_id"`
+	CreatedAt       time.Time          `bson:"created_at"`
 }
 
-func NewMongoRepo(client *mongo.Client) *MongoRepo {
-	return &MongoRepo{
+func NewMongoRepo(client *mongo.Client) ports.OrderRepository {
+	return &mongoRepo{
 		collection: client.Database("clean_db").Collection("orders"),
 	}
 }
 
-func (r *MongoRepo) Save(order *entities.Order) error {
+func (r *mongoRepo) Save(order *entities.Order) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -52,11 +55,13 @@ func (r *MongoRepo) Save(order *entities.Order) error {
 	}
 
 	model := orderModel{
-		Items:         itemsModel,
-		Total:         order.Total,
-		Status:        order.Status,
-		TransactionID: order.TransactionID,
-		CreatedAt:     order.CreatedAt,
+		Items:           itemsModel,
+		Total:           order.Total,
+		Status:          order.Status,
+		TransactionID:   order.TransactionID,
+		UserID:          order.UserID,
+		ShippingAddress: order.ShippingAddress,
+		CreatedAt:       order.CreatedAt,
 	}
 
 	res, err := r.collection.InsertOne(ctx, model)

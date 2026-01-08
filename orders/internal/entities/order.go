@@ -21,9 +21,11 @@ type Order struct {
 
 func NewOrder(userID string, items []OrderItem, shippingAddress string) *Order {
 	order := &Order{
-		Items:     items,
-		Status:    "PENDING",
-		CreatedAt: time.Now(),
+		UserID:          userID,
+		Items:           items,
+		Status:          "PENDING",
+		ShippingAddress: shippingAddress,
+		CreatedAt:       time.Now(),
 	}
 	order.calculateTotal()
 	return order
