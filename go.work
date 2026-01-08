@@ -1,0 +1,9 @@
+go 1.25.3
+
+use (
+	./api
+	./orders
+	./payments
+	./products
+	./users
+)
