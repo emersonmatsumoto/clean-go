@@ -1,0 +1,41 @@
+package entities
+
+import "time"
+
+type OrderItem struct {
+	ProductID string
+	Price     float64
+	Quantity  int
+}
+
+type Order struct {
+	ID            string
+	Items         []OrderItem
+	Total         float64
+	Status        string
+	TransactionID string
+	CreatedAt     time.Time
+}
+
+func NewOrder(items []OrderItem) *Order {
+	order := &Order{
+		Items:     items,
+		Status:    "PENDING",
+		CreatedAt: time.Now(),
+	}
+	order.calculateTotal()
+	return order
+}
+
+func (o *Order) calculateTotal() {
+	var total float64
+	for _, item := range o.Items {
+		total += item.Price * float64(item.Quantity)
+	}
+	o.Total = total
+}
+
+func (o *Order) MarkAsPaid(txID string) {
+	o.Status = "PAID"
+	o.TransactionID = txID
+}
