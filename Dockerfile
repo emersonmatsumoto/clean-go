@@ -7,6 +7,7 @@ COPY api/ ./api/
 COPY products/ ./products/
 COPY payments/ ./payments/
 COPY orders/ ./orders/
+COPY users/ ./users/
 
 RUN go work sync
 RUN go build -o /app/server ./api/main.go
