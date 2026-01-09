@@ -6,6 +6,6 @@ require github.com/stripe/stripe-go/v84 v84.1.0
 
 require (
 	github.com/stretchr/testify v1.11.1 // indirect
-	golang.org/x/net v0.45.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
 )
