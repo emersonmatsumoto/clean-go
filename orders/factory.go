@@ -6,7 +6,7 @@ import (
 	"github.com/emersonmatsumoto/clean-go/payments"
 	"github.com/emersonmatsumoto/clean-go/products"
 	"github.com/emersonmatsumoto/clean-go/users"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 func NewComponent(

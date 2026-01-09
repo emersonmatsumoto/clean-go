@@ -5,6 +5,7 @@ go 1.25.3
 require github.com/stripe/stripe-go/v84 v84.1.0
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	golang.org/x/text v0.17.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
+	golang.org/x/net v0.45.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 )

@@ -6,9 +6,8 @@ import (
 
 	"github.com/emersonmatsumoto/clean-go/users/internal/entities"
 	"github.com/emersonmatsumoto/clean-go/users/internal/ports"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type addressModel struct {
@@ -18,10 +17,10 @@ type addressModel struct {
 }
 
 type userModel struct {
-	ID      primitive.ObjectID `bson:"_id,omitempty"`
-	Name    string             `bson:"name"`
-	Email   string             `bson:"email"`
-	Address addressModel       `bson:"address"`
+	ID      bson.ObjectID `bson:"_id,omitempty"`
+	Name    string        `bson:"name"`
+	Email   string        `bson:"email"`
+	Address addressModel  `bson:"address"`
 }
 
 type mongoRepo struct {
@@ -38,7 +37,7 @@ func (r *mongoRepo) FindByID(id string) (*entities.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objID, err := primitive.ObjectIDFromHex(id)
+	objID, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}

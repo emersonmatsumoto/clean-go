@@ -6,8 +6,8 @@ import (
 
 	"github.com/emersonmatsumoto/clean-go/orders/internal/entities"
 	"github.com/emersonmatsumoto/clean-go/orders/internal/ports"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type mongoRepo struct {
@@ -15,20 +15,20 @@ type mongoRepo struct {
 }
 
 type orderItemModel struct {
-	ProductID primitive.ObjectID `bson:"product_id"`
-	Price     float64            `bson:"price"`
-	Quantity  int                `bson:"quantity"`
+	ProductID bson.ObjectID `bson:"product_id"`
+	Price     float64       `bson:"price"`
+	Quantity  int           `bson:"quantity"`
 }
 
 type orderModel struct {
-	ID              primitive.ObjectID `bson:"_id,omitempty"`
-	Items           []orderItemModel   `bson:"items"`
-	Total           float64            `bson:"total"`
-	Status          string             `bson:"status"`
-	ShippingAddress string             `bson:"shipping_address"`
-	TransactionID   string             `bson:"transaction_id"`
-	UserID          string             `bson:"user_id"`
-	CreatedAt       time.Time          `bson:"created_at"`
+	ID              bson.ObjectID    `bson:"_id,omitempty"`
+	Items           []orderItemModel `bson:"items"`
+	Total           float64          `bson:"total"`
+	Status          string           `bson:"status"`
+	ShippingAddress string           `bson:"shipping_address"`
+	TransactionID   string           `bson:"transaction_id"`
+	UserID          string           `bson:"user_id"`
+	CreatedAt       time.Time        `bson:"created_at"`
 }
 
 func NewMongoRepo(client *mongo.Client) ports.OrderRepository {
@@ -43,7 +43,7 @@ func (r *mongoRepo) Save(order *entities.Order) error {
 
 	var itemsModel []orderItemModel
 	for _, item := range order.Items {
-		prodID, err := primitive.ObjectIDFromHex(item.ProductID)
+		prodID, err := bson.ObjectIDFromHex(item.ProductID)
 		if err != nil {
 			return err
 		}
@@ -69,7 +69,7 @@ func (r *mongoRepo) Save(order *entities.Order) error {
 		return err
 	}
 
-	if insertID, ok := res.InsertedID.(primitive.ObjectID); ok {
+	if insertID, ok := res.InsertedID.(bson.ObjectID); ok {
 		order.ID = insertID.Hex()
 	}
 

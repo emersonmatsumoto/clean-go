@@ -7,9 +7,8 @@ import (
 
 	"github.com/emersonmatsumoto/clean-go/products/internal/entities"
 	"github.com/emersonmatsumoto/clean-go/products/internal/ports"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 type mongoRepo struct {
@@ -17,9 +16,9 @@ type mongoRepo struct {
 }
 
 type productModel struct {
-	ID    primitive.ObjectID `bson:"_id,omitempty"`
-	Name  string             `bson:"name"`
-	Price float64            `bson:"price"`
+	ID    bson.ObjectID `bson:"_id,omitempty"`
+	Name  string        `bson:"name"`
+	Price float64       `bson:"price"`
 }
 
 func NewMongoRepo(client *mongo.Client) ports.ProductRepository {
@@ -32,7 +31,7 @@ func (r *mongoRepo) FindByID(id string) (*entities.Product, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objID, err := primitive.ObjectIDFromHex(id)
+	objID, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, errors.New("formato de ID inválido")
 	}

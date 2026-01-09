@@ -12,8 +12,8 @@ import (
 	"github.com/emersonmatsumoto/clean-go/payments"
 	"github.com/emersonmatsumoto/clean-go/products"
 	"github.com/emersonmatsumoto/clean-go/users"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 	defer cancel()
 
 	mongoUri := os.Getenv("MONGO_URI")
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoUri))
+	client, err := mongo.Connect(options.Client().ApplyURI(mongoUri))
 	if err != nil {
 		log.Fatal("Erro ao conectar no Mongo:", err)
 	}
