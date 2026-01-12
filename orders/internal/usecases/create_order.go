@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -9,6 +10,8 @@ import (
 	"github.com/emersonmatsumoto/clean-go/payments"
 	"github.com/emersonmatsumoto/clean-go/products"
 	"github.com/emersonmatsumoto/clean-go/users"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type CreateOrderUseCase struct {
@@ -22,7 +25,12 @@ func NewCreateOrderUseCase(r ports.OrderRepository, p products.Component, pay pa
 	return &CreateOrderUseCase{repo: r, prodComp: p, payComp: pay, userComp: user}
 }
 
-func (uc *CreateOrderUseCase) Execute(userID string, itemsInput []entities.OrderItem, cardToken string) (*entities.Order, error) {
+var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/orders/internal/usecases")
+
+func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsInput []entities.OrderItem, cardToken string) (*entities.Order, error) {
+	ctx, span := tracer.Start(ctx, "Orders.CreateOrderUseCase.Execute")
+	defer span.End()
+
 	var domainItems []entities.OrderItem
 
 	for _, item := range itemsInput {
@@ -46,6 +54,12 @@ func (uc *CreateOrderUseCase) Execute(userID string, itemsInput []entities.Order
 	addressStr := fmt.Sprintf("%s, %s - %s", userData.Address.Street, userData.Address.City, userData.Address.ZipCode)
 	order := entities.NewOrder(userID, domainItems, addressStr)
 
+	span.SetAttributes(
+		attribute.String("order.id", order.ID),
+		attribute.String("user_id", order.UserID),
+		attribute.Float64("order.total", order.Total),
+	)
+
 	payRes, err := uc.payComp.ProcessPayment(payments.ProcessPaymentInput{
 		OrderID:  order.ID,
 		Amount:   order.Total,
@@ -53,12 +67,18 @@ func (uc *CreateOrderUseCase) Execute(userID string, itemsInput []entities.Order
 		Currency: "BRL",
 	})
 
+	span.SetAttributes(
+		attribute.String("payment.status", payRes.Status),
+		attribute.String("payment.transaction_id", payRes.TransactionID),
+	)
+
 	if err != nil || payRes.Status != "SUCCESS" {
 		return nil, errors.New("falha no pagamento")
 	}
 
 	order.MarkAsPaid(payRes.TransactionID)
-	err = uc.repo.Save(order)
+
+	err = uc.repo.Save(ctx, order)
 
 	return order, err
 }

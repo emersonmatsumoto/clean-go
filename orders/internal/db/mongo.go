@@ -8,6 +8,7 @@ import (
 	"github.com/emersonmatsumoto/clean-go/orders/internal/ports"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.opentelemetry.io/otel"
 )
 
 type mongoRepo struct {
@@ -37,8 +38,13 @@ func NewMongoRepo(client *mongo.Client) ports.OrderRepository {
 	}
 }
 
-func (r *mongoRepo) Save(order *entities.Order) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/orders/internal/db")
+
+func (r *mongoRepo) Save(ctx context.Context, order *entities.Order) error {
+	ctx, span := tracer.Start(ctx, "Orders.MongoRepo.Save")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	var itemsModel []orderItemModel

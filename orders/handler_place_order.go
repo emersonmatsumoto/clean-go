@@ -1,9 +1,11 @@
 package orders
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/emersonmatsumoto/clean-go/orders/internal/entities"
+	"go.opentelemetry.io/otel"
 )
 
 type OrderItemInput struct {
@@ -23,7 +25,12 @@ type PlaceOrderOutput struct {
 	Status  string  `json:"status"`
 }
 
-func (c *component) PlaceOrder(in PlaceOrderInput) (PlaceOrderOutput, error) {
+var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/orders")
+
+func (c *component) PlaceOrder(ctx context.Context, in PlaceOrderInput) (PlaceOrderOutput, error) {
+	ctx, span := tracer.Start(ctx, "Orders.Component.PlaceOrder")
+	defer span.End()
+
 	if len(in.Items) == 0 {
 		return PlaceOrderOutput{}, fmt.Errorf("o pedido deve ter pelo menos um item")
 	}
@@ -39,7 +46,7 @@ func (c *component) PlaceOrder(in PlaceOrderInput) (PlaceOrderOutput, error) {
 		})
 	}
 
-	order, err := c.createUC.Execute(in.UserID, itemsToProcess, in.CardToken)
+	order, err := c.createUC.Execute(ctx, in.UserID, itemsToProcess, in.CardToken)
 	if err != nil {
 		return PlaceOrderOutput{}, err
 	}
