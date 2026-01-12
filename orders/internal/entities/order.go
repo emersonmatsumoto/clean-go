@@ -39,6 +39,10 @@ func (o *Order) calculateTotal() {
 	o.Total = total
 }
 
+func (o *Order) SetID(id string) {
+	o.ID = id
+}
+
 func (o *Order) MarkAsPaid(txID string) {
 	o.Status = "PAID"
 	o.TransactionID = txID

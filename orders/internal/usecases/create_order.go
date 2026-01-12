@@ -55,7 +55,6 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 	order := entities.NewOrder(userID, domainItems, addressStr)
 
 	span.SetAttributes(
-		attribute.String("order.id", order.ID),
 		attribute.String("user.id", order.UserID),
 		attribute.Float64("order.total", order.Total),
 	)
@@ -73,7 +72,15 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 
 	order.MarkAsPaid(payRes.TransactionID)
 
-	err = uc.repo.Save(ctx, order)
+	orderID, err := uc.repo.Save(ctx, order)
+	if err != nil {
+		return nil, err
+	}
+
+	order.SetID(orderID)
+	span.SetAttributes(
+		attribute.String("order.id", order.ID),
+	)
 
 	return order, err
 }

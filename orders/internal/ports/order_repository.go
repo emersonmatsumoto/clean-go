@@ -7,5 +7,5 @@ import (
 )
 
 type OrderRepository interface {
-	Save(ctx context.Context, order *entities.Order) error
+	Save(ctx context.Context, order *entities.Order) (string, error)
 }

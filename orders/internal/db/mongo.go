@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/emersonmatsumoto/clean-go/orders/internal/entities"
@@ -40,7 +41,7 @@ func NewMongoRepo(client *mongo.Client) ports.OrderRepository {
 
 var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/orders/internal/db")
 
-func (r *mongoRepo) Save(ctx context.Context, order *entities.Order) error {
+func (r *mongoRepo) Save(ctx context.Context, order *entities.Order) (string, error) {
 	ctx, span := tracer.Start(ctx, "Orders.MongoRepo.Save")
 	defer span.End()
 
@@ -51,7 +52,7 @@ func (r *mongoRepo) Save(ctx context.Context, order *entities.Order) error {
 	for _, item := range order.Items {
 		prodID, err := bson.ObjectIDFromHex(item.ProductID)
 		if err != nil {
-			return err
+			return "", err
 		}
 		itemsModel = append(itemsModel, orderItemModel{
 			ProductID: prodID,
@@ -72,12 +73,13 @@ func (r *mongoRepo) Save(ctx context.Context, order *entities.Order) error {
 
 	res, err := r.collection.InsertOne(ctx, model)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if insertID, ok := res.InsertedID.(bson.ObjectID); ok {
-		order.ID = insertID.Hex()
+	insertID, ok := res.InsertedID.(bson.ObjectID)
+	if !ok {
+		return "", errors.New("failed to convert inserted id to objectID")
 	}
 
-	return nil
+	return insertID.Hex(), nil
 }
