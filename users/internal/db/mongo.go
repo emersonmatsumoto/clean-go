@@ -8,6 +8,7 @@ import (
 	"github.com/emersonmatsumoto/clean-go/users/internal/ports"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.opentelemetry.io/otel"
 )
 
 type addressModel struct {
@@ -33,7 +34,12 @@ func NewMongoRepo(client *mongo.Client) ports.UserRepository {
 	}
 }
 
-func (r *mongoRepo) FindByID(id string) (*entities.User, error) {
+var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/users/internal/db")
+
+func (r *mongoRepo) FindByID(ctx context.Context, id string) (*entities.User, error) {
+	ctx, span := tracer.Start(ctx, "Users.MongoRepo.FindByID")
+	defer span.End()
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

@@ -46,7 +46,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 		})
 	}
 
-	userData, err := uc.userComp.GetUser(users.GetUserInput{ID: userID})
+	userData, err := uc.userComp.GetUser(ctx, users.GetUserInput{ID: userID})
 	if err != nil {
 		return nil, errors.New("usuário não encontrado")
 	}

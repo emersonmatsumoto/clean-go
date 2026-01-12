@@ -1,5 +1,11 @@
 package users
 
+import (
+	"context"
+
+	"go.opentelemetry.io/otel"
+)
+
 type UserAddress struct {
 	Street  string `json:"street"`
 	City    string `json:"city"`
@@ -16,8 +22,13 @@ type GetUserOutput struct {
 	Address UserAddress `json:"address"`
 }
 
-func (c *component) GetUser(in GetUserInput) (GetUserOutput, error) {
-	user, err := c.getUC.Execute(in.ID)
+var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/users")
+
+func (c *component) GetUser(ctx context.Context, in GetUserInput) (GetUserOutput, error) {
+	ctx, span := tracer.Start(ctx, "Users.Component.GetUser")
+	defer span.End()
+
+	user, err := c.getUC.Execute(ctx, in.ID)
 	if err != nil {
 		return GetUserOutput{}, err
 	}
