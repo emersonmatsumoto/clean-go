@@ -60,17 +60,12 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 		attribute.Float64("order.total", order.Total),
 	)
 
-	payRes, err := uc.payComp.ProcessPayment(payments.ProcessPaymentInput{
+	payRes, err := uc.payComp.ProcessPayment(ctx, payments.ProcessPaymentInput{
 		OrderID:  order.ID,
 		Amount:   order.Total,
 		TokenID:  cardToken,
 		Currency: "BRL",
 	})
-
-	span.SetAttributes(
-		attribute.String("payment.status", payRes.Status),
-		attribute.String("payment.transaction_id", payRes.TransactionID),
-	)
 
 	if err != nil || payRes.Status != "SUCCESS" {
 		return nil, errors.New("falha no pagamento")
