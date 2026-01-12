@@ -20,16 +20,24 @@ import (
 )
 
 type Config struct {
-	MongoURI  string
-	StripeKey string
-	Port      string
+	MongoURI    string
+	StripeKey   string
+	LogURI      string
+	MetricURI   string
+	TraceURI    string
+	ServiceName string
+	Port        string
 }
 
 func main() {
 	cfg := Config{
-		MongoURI:  os.Getenv("MONGO_URI"),
-		StripeKey: os.Getenv("STRIPE_KEY"),
-		Port:      ":8080",
+		MongoURI:    os.Getenv("MONGO_URI"),
+		StripeKey:   os.Getenv("STRIPE_KEY"),
+		LogURI:      os.Getenv("LOG_URI"),
+		MetricURI:   os.Getenv("METRIC_URI"),
+		TraceURI:    os.Getenv("TRACE_URI"),
+		ServiceName: os.Getenv("SERVICE_NAME"),
+		Port:        ":8080",
 	}
 	if cfg.MongoURI == "" {
 		log.Fatal("MONGO_URI não foi configurada nas variáveis de ambiente")
@@ -50,7 +58,7 @@ func run(cfg Config) (err error) {
 	defer stop()
 
 	// Set up OpenTelemetry.
-	otelShutdown, err := platform.SetupOTelSDK(ctx)
+	otelShutdown, err := platform.SetupOTelSDK(ctx, cfg.ServiceName, cfg.LogURI, cfg.MetricURI, cfg.TraceURI)
 	if err != nil {
 		return err
 	}
