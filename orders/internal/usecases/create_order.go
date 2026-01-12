@@ -34,7 +34,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 	var domainItems []entities.OrderItem
 
 	for _, item := range itemsInput {
-		p, err := uc.prodComp.GetProduct(products.GetProductInput{ID: item.ProductID})
+		p, err := uc.prodComp.GetProduct(ctx, products.GetProductInput{ID: item.ProductID})
 		if err != nil {
 			return nil, fmt.Errorf("produto %s não encontrado", item.ProductID)
 		}
@@ -56,7 +56,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 
 	span.SetAttributes(
 		attribute.String("order.id", order.ID),
-		attribute.String("user_id", order.UserID),
+		attribute.String("user.id", order.UserID),
 		attribute.Float64("order.total", order.Total),
 	)
 

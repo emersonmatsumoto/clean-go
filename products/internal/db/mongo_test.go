@@ -77,7 +77,7 @@ func TestProductRepository_Integration(t *testing.T) {
 			t.Fatalf("inserted id is not an ObjectID: %T", ins.InsertedID)
 		}
 
-		prod, err := repo.FindByID(oid.Hex())
+		prod, err := repo.FindByID(context.Background(), oid.Hex())
 		if err != nil {
 			t.Fatalf("FindByID returned error: %v", err)
 		}
@@ -93,7 +93,7 @@ func TestProductRepository_Integration(t *testing.T) {
 		setupTest(t)
 
 		id := bson.NewObjectID().Hex()
-		prod, err := repo.FindByID(id)
+		prod, err := repo.FindByID(context.Background(), id)
 		if err != nil {
 			t.Fatalf("expected no error for not found, got: %v", err)
 		}
@@ -105,7 +105,7 @@ func TestProductRepository_Integration(t *testing.T) {
 	t.Run("InvalidID", func(t *testing.T) {
 		setupTest(t)
 
-		prod, err := repo.FindByID("bad-id")
+		prod, err := repo.FindByID(context.Background(), "bad-id")
 		if prod != nil {
 			t.Fatalf("expected nil product for invalid id, got: %+v", prod)
 		}

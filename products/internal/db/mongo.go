@@ -9,6 +9,7 @@ import (
 	"github.com/emersonmatsumoto/clean-go/products/internal/ports"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.opentelemetry.io/otel"
 )
 
 type mongoRepo struct {
@@ -27,8 +28,13 @@ func NewMongoRepo(client *mongo.Client) ports.ProductRepository {
 	}
 }
 
-func (r *mongoRepo) FindByID(id string) (*entities.Product, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/products/internal/db")
+
+func (r *mongoRepo) FindByID(ctx context.Context, id string) (*entities.Product, error) {
+	ctx, span := tracer.Start(ctx, "Products.MongoRepo.FindByID")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	objID, err := bson.ObjectIDFromHex(id)

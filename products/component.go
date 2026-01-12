@@ -1,9 +1,13 @@
 package products
 
-import "github.com/emersonmatsumoto/clean-go/products/internal/usecases"
+import (
+	"context"
+
+	"github.com/emersonmatsumoto/clean-go/products/internal/usecases"
+)
 
 type Component interface {
-	GetProduct(input GetProductInput) (GetProductOutput, error)
+	GetProduct(ctx context.Context, input GetProductInput) (GetProductOutput, error)
 }
 
 type component struct {

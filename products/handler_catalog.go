@@ -1,24 +1,35 @@
 package products
 
+import (
+	"context"
+
+	"go.opentelemetry.io/otel"
+)
+
 type GetProductInput struct {
-    ID string
+	ID string
 }
 
 type GetProductOutput struct {
-    ID    string
-    Name  string
-    Price float64
+	ID    string
+	Name  string
+	Price float64
 }
 
-func (c *component) GetProduct(in GetProductInput) (GetProductOutput, error) {
-    p, err := c.getUC.Execute(in.ID) 
-    if err != nil {
-        return GetProductOutput{}, err
-    }
+var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/products")
 
-    return GetProductOutput{
-        ID:    p.ID,
-        Name:  p.Name,
-        Price: p.Price,
-    }, nil
+func (c *component) GetProduct(ctx context.Context, in GetProductInput) (GetProductOutput, error) {
+	ctx, span := tracer.Start(ctx, "Products.Component.GetProduct")
+	defer span.End()
+
+	p, err := c.getUC.Execute(ctx, in.ID)
+	if err != nil {
+		return GetProductOutput{}, err
+	}
+
+	return GetProductOutput{
+		ID:    p.ID,
+		Name:  p.Name,
+		Price: p.Price,
+	}, nil
 }

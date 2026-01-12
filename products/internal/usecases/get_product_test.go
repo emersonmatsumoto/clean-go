@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -12,7 +13,7 @@ type mockRepo struct {
 	findByID func(id string) (*entities.Product, error)
 }
 
-func (m *mockRepo) FindByID(id string) (*entities.Product, error) {
+func (m *mockRepo) FindByID(ctx context.Context, id string) (*entities.Product, error) {
 	return m.findByID(id)
 }
 
@@ -67,7 +68,7 @@ func TestGetProductUseCase_Execute(t *testing.T) {
 			repo = &mockRepo{findByID: tt.repoFn}
 
 			uc := NewGetProductUseCase(repo)
-			got, err := uc.Execute(tt.id)
+			got, err := uc.Execute(context.Background(), tt.id)
 
 			if tt.wantErr {
 				if err == nil {
