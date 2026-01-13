@@ -12,6 +12,7 @@ import (
 	"github.com/emersonmatsumoto/clean-go/users"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 type CreateOrderUseCase struct {
@@ -25,7 +26,19 @@ func NewCreateOrderUseCase(r ports.OrderRepository, p products.Component, pay pa
 	return &CreateOrderUseCase{repo: r, prodComp: p, payComp: pay, userComp: user}
 }
 
-var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/orders/internal/usecases")
+var (
+	tracer          = otel.Tracer("github.com/emersonmatsumoto/clean-go/orders/internal/usecases")
+	meter           = otel.Meter("orders-component")
+	orderCounter, _ = meter.Int64Counter(
+		"orders.created.total",
+		metric.WithDescription("Total de pedidos criados"),
+	)
+	orderValue, _ = meter.Float64Histogram(
+		"orders.value",
+		metric.WithUnit("BRL"),
+		metric.WithDescription("Distribuição dos valores dos pedidos"),
+	)
+)
 
 func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsInput []entities.OrderItem, cardToken string) (*entities.Order, error) {
 	ctx, span := tracer.Start(ctx, "Orders.CreateOrderUseCase.Execute")
@@ -81,6 +94,12 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 	span.SetAttributes(
 		attribute.String("order.id", order.ID),
 	)
+
+	orderCounter.Add(ctx, 1, metric.WithAttributes(
+		attribute.String("status", "success"),
+		attribute.String("city", userData.Address.City),
+	))
+	orderValue.Record(ctx, order.Total)
 
 	return order, err
 }
