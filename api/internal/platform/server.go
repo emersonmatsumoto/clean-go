@@ -6,6 +6,8 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/metric"
 )
 
@@ -22,6 +24,8 @@ func (rw *responseWriter) WriteHeader(code int) {
 func newResponseWriter(w http.ResponseWriter) *responseWriter {
 	return &responseWriter{w, http.StatusOK} // Default 200
 }
+
+var logger = global.GetLoggerProvider().Logger("http-middleware")
 
 func metricsMiddleware(next http.Handler) http.Handler {
 	var meter = otel.Meter("http-server")
@@ -47,6 +51,27 @@ func metricsMiddleware(next http.Handler) http.Handler {
 		)
 
 		httpDuration.Record(r.Context(), duration, attrs)
+
+		record := log.Record{}
+		record.SetTimestamp(time.Now())
+		record.SetBody(log.StringValue("[http.request]"))
+
+		record.AddAttributes(
+			log.String("method", r.Method),
+			log.String("path", r.URL.Path),
+			log.Int64("status", int64(rw.statusCode)),
+			log.String("ip", r.RemoteAddr),
+			log.String("user_agent", r.UserAgent()),
+			log.Float64("duration_ms", float64(duration)),
+		)
+
+		if rw.statusCode >= 500 {
+			record.SetSeverity(log.SeverityError)
+		} else {
+			record.SetSeverity(log.SeverityInfo)
+		}
+
+		logger.Emit(r.Context(), record)
 	})
 }
 

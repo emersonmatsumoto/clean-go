@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -87,7 +88,7 @@ func run(cfg Config) (err error) {
 	srv := platform.NewServer(cfg.Port, handler)
 	srvErr := make(chan error, 1)
 	go func() {
-		log.Printf("Iniciando servidor na porta %s", cfg.Port)
+		slog.Info("Iniciando servidor", "port", cfg.Port)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			srvErr <- err
 		}
@@ -97,7 +98,7 @@ func run(cfg Config) (err error) {
 	case err := <-srvErr:
 		return fmt.Errorf("erro no servidor: %w", err)
 	case <-ctx.Done():
-		log.Println("Sinal recebido, encerrando servidor...")
+		slog.Info("Sinal recebido, encerrando servidor...")
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

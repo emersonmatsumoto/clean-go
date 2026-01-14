@@ -3,17 +3,21 @@ package platform
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"time"
 
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
+	otellog "go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
-	otellog "go.opentelemetry.io/otel/sdk/log"
+	otelsdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -95,6 +99,10 @@ func SetupOTelSDK(ctx context.Context, serviceName, logURI, metricURI, traceURI 
 	shutdownFuncs = append(shutdownFuncs, loggerProvider.Shutdown)
 	global.SetLoggerProvider(loggerProvider)
 
+	otelslogHandler := otelslog.NewHandler(serviceName)
+	logger := slog.New(otelslogHandler)
+	slog.SetDefault(logger)
+
 	return shutdown, err
 }
 
@@ -127,30 +135,104 @@ func newMeterProvider(ctx context.Context, uri string, res *resource.Resource) (
 	), nil
 }
 
-func newLoggerProvider(ctx context.Context, uri string, res *resource.Resource) (*otellog.LoggerProvider, error) {
-	var processors []otellog.Processor
+type SimpleConsoleExporter struct{}
 
-	// Processador gRPC (Opcional)
+func (e *SimpleConsoleExporter) Export(ctx context.Context, records []otelsdklog.Record) error {
+	for _, r := range records {
+		level := r.Severity().String()
+		if level == "" {
+			level = "INFO"
+		}
+
+		fullDate := r.Timestamp().Format(time.RFC3339)
+
+		message := ""
+		if r.Body().Kind() != otellog.KindEmpty {
+			message = r.Body().AsString()
+		}
+
+		if message == "[http.request]" {
+			var method, path, ip, ua string
+			var status int64
+			var duration float64
+
+			r.WalkAttributes(func(kv otellog.KeyValue) bool {
+				switch kv.Key {
+				case "method":
+					method = kv.Value.AsString()
+				case "path":
+					path = kv.Value.AsString()
+				case "status":
+					status = kv.Value.AsInt64()
+				case "ip":
+					ip = kv.Value.AsString()
+				case "user_agent":
+					ua = kv.Value.AsString()
+				case "duration_ms":
+					duration = kv.Value.AsFloat64()
+				}
+				return true
+			})
+
+			if ip == "" {
+				ip = "-"
+			}
+
+			// Montagem da Mensagem (IP "METHOD PATH" STATUS DURATION "USER_AGENT")
+			message = fmt.Sprintf("%s \"%s %s\" %d %.2fms \"%s\"",
+				ip,
+				method,
+				path,
+				status,
+				duration,
+				ua,
+			)
+		} else {
+			r.WalkAttributes(func(kv otellog.KeyValue) bool {
+				if kv.Value.Kind() == otellog.KindString {
+					val := kv.Value.AsString()
+					val = fmt.Sprintf("\"%s\"", val)
+					message = fmt.Sprintf("%s %s=%v", message, kv.Key, val)
+				}
+				return true
+			})
+		}
+
+		// 5. PRINT FINAL: LEVEL | DATA | MESSAGE
+		fmt.Fprintf(os.Stdout, "%-5s | %s | %s\n",
+			level,
+			fullDate,
+			message,
+		)
+	}
+	return nil
+}
+
+func (e *SimpleConsoleExporter) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+func (e *SimpleConsoleExporter) ForceFlush(ctx context.Context) error {
+	return nil
+}
+
+func newLoggerProvider(ctx context.Context, uri string, res *resource.Resource) (*otelsdklog.LoggerProvider, error) {
+	var processors []otelsdklog.Processor
+
 	if uri != "" {
 		remoteExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithEndpoint(uri), otlploggrpc.WithInsecure())
 		if err != nil {
 			return nil, err
 		}
-		processors = append(processors, otellog.NewBatchProcessor(remoteExporter))
+		processors = append(processors, otelsdklog.NewBatchProcessor(remoteExporter))
 	}
 
-	// Processador Stdout (Sempre Ativo)
-	consoleExporter, err := stdoutlog.New(stdoutlog.WithPrettyPrint())
-	if err != nil {
-		return nil, err
-	}
-	processors = append(processors, otellog.NewBatchProcessor(consoleExporter))
+	processors = append(processors, otelsdklog.NewBatchProcessor(&SimpleConsoleExporter{}))
 
-	// Criamos o provider com todos os processadores coletados
-	options := []otellog.LoggerProviderOption{otellog.WithResource(res)}
+	options := []otelsdklog.LoggerProviderOption{otelsdklog.WithResource(res)}
 	for _, p := range processors {
-		options = append(options, otellog.WithProcessor(p))
+		options = append(options, otelsdklog.WithProcessor(p))
 	}
 
-	return otellog.NewLoggerProvider(options...), nil
+	return otelsdklog.NewLoggerProvider(options...), nil
 }
