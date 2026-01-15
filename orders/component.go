@@ -7,7 +7,7 @@ import (
 )
 
 type Component interface {
-	PlaceOrder(ctx context.Context, in PlaceOrderInput) (PlaceOrderOutput, error)
+	PlaceOrder(ctx context.Context, in usecases.PlaceOrderInput) (usecases.PlaceOrderOutput, error)
 }
 
 type component struct {

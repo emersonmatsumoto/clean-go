@@ -12,8 +12,26 @@ import (
 	"github.com/emersonmatsumoto/clean-go/users"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 )
+
+type OrderItemInput struct {
+	ProductID string
+	Quantity  int
+}
+
+type PlaceOrderInput struct {
+	UserID    string
+	Items     []OrderItemInput
+	CardToken string
+}
+
+type PlaceOrderOutput struct {
+	OrderID string
+	Total   float64
+	Status  string
+}
 
 type CreateOrderUseCase struct {
 	repo     ports.OrderRepository
@@ -40,16 +58,35 @@ var (
 	)
 )
 
-func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsInput []entities.OrderItem, cardToken string) (*entities.Order, error) {
+func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (PlaceOrderOutput, error) {
 	ctx, span := tracer.Start(ctx, "Orders.CreateOrderUseCase.Execute")
 	defer span.End()
 
+	if len(in.Items) == 0 {
+		err := fmt.Errorf("o pedido deve ter pelo menos um item")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return PlaceOrderOutput{}, err
+	}
+
+	if in.CardToken == "" {
+		err := fmt.Errorf("token do cartão é obrigatório")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return PlaceOrderOutput{}, err
+	}
+
 	var domainItems []entities.OrderItem
 
-	for _, item := range itemsInput {
+	for _, item := range in.Items {
 		p, err := uc.prodComp.GetProduct(ctx, products.GetProductInput{ID: item.ProductID})
 		if err != nil {
-			return nil, fmt.Errorf("produto %s não encontrado", item.ProductID)
+			span.RecordError(err)
+			span.SetStatus(
+				codes.Error,
+				fmt.Sprintf("produto %s não encontrado", item.ProductID),
+			)
+			return PlaceOrderOutput{}, fmt.Errorf("produto %s não encontrado", item.ProductID)
 		}
 
 		domainItems = append(domainItems, entities.OrderItem{
@@ -59,13 +96,15 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 		})
 	}
 
-	userData, err := uc.userComp.GetUser(ctx, users.GetUserInput{ID: userID})
+	userData, err := uc.userComp.GetUser(ctx, users.GetUserInput{ID: in.UserID})
 	if err != nil {
-		return nil, errors.New("usuário não encontrado")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "usuário não encontrado")
+		return PlaceOrderOutput{}, errors.New("usuário não encontrado")
 	}
 
 	addressStr := fmt.Sprintf("%s, %s - %s", userData.Address.Street, userData.Address.City, userData.Address.ZipCode)
-	order := entities.NewOrder(userID, domainItems, addressStr)
+	order := entities.NewOrder(in.UserID, domainItems, addressStr)
 
 	span.SetAttributes(
 		attribute.String("user.id", order.UserID),
@@ -75,19 +114,30 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 	payRes, err := uc.payComp.ProcessPayment(ctx, payments.ProcessPaymentInput{
 		OrderID:  order.ID,
 		Amount:   order.Total,
-		TokenID:  cardToken,
+		TokenID:  in.CardToken,
 		Currency: "BRL",
 	})
 
-	if err != nil || payRes.Status != "SUCCESS" {
-		return nil, errors.New("falha no pagamento")
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "erro ao processar pagamento")
+		return PlaceOrderOutput{}, errors.New("falha no pagamento")
+	}
+
+	if payRes.Status != "SUCCESS" {
+		err := fmt.Errorf("pagamento recusado: %s", payRes.Status)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "pagamento recusado")
+		return PlaceOrderOutput{}, errors.New("falha no pagamento")
 	}
 
 	order.MarkAsPaid(payRes.TransactionID)
 
 	orderID, err := uc.repo.Save(ctx, order)
 	if err != nil {
-		return nil, err
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "erro ao salvar pedido")
+		return PlaceOrderOutput{}, err
 	}
 
 	order.SetID(orderID)
@@ -101,5 +151,11 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, userID string, itemsI
 	))
 	orderValue.Record(ctx, order.Total)
 
-	return order, err
+	span.SetStatus(codes.Ok, "ordem criada com sucesso")
+
+	return PlaceOrderOutput{
+		OrderID: order.ID,
+		Total:   order.Total,
+		Status:  order.Status,
+	}, nil
 }
