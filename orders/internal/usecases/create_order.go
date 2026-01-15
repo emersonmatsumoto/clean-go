@@ -108,7 +108,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in orders.PlaceOrderI
 		return orders.PlaceOrderOutput{}, errors.New("falha no pagamento")
 	}
 
-	if payRes.Status != "SUCCESS" {
+	if payRes.Status != "PAID" {
 		err := fmt.Errorf("pagamento recusado: %s", payRes.Status)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "pagamento recusado")

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/emersonmatsumoto/clean-go/contracts/products"
 	"github.com/emersonmatsumoto/clean-go/products/internal/entities"
 	"github.com/emersonmatsumoto/clean-go/products/internal/ports"
 )
@@ -68,7 +69,7 @@ func TestGetProductUseCase_Execute(t *testing.T) {
 			repo = &mockRepo{findByID: tt.repoFn}
 
 			uc := NewGetProductUseCase(repo)
-			got, err := uc.Execute(context.Background(), tt.id)
+			got, err := uc.Execute(context.Background(), products.GetProductInput{ID: tt.id})
 
 			if tt.wantErr {
 				if err == nil {
@@ -82,10 +83,6 @@ func TestGetProductUseCase_Execute(t *testing.T) {
 
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if got == nil {
-				t.Fatalf("expected product, got nil")
 			}
 
 			if got.ID != tt.wantProd.ID || got.Name != tt.wantProd.Name || got.Price != tt.wantProd.Price {

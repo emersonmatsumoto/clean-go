@@ -3,11 +3,13 @@ package usecases
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	"github.com/emersonmatsumoto/clean-go/users/internal/entities"
+	"github.com/emersonmatsumoto/clean-go/contracts/users"
 	"github.com/emersonmatsumoto/clean-go/users/internal/ports"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type GetUserUseCase struct {
@@ -20,26 +22,42 @@ func NewGetUserUseCase(repo ports.UserRepository) *GetUserUseCase {
 
 var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/users/internal/usecases")
 
-func (uc *GetUserUseCase) Execute(ctx context.Context, id string) (*entities.User, error) {
+func (uc *GetUserUseCase) Execute(ctx context.Context, in users.GetUserInput) (users.GetUserOutput, error) {
 	ctx, span := tracer.Start(ctx, "Users.GetUserUseCase.Execute")
 	defer span.End()
 
-	if id == "" {
-		return nil, errors.New("id do utilizador é obrigatório")
+	if in.ID == "" {
+		err := fmt.Errorf("id do usuário é obrigatório")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return users.GetUserOutput{}, errors.New("id do usuário é obrigatório")
 	}
 
 	span.SetAttributes(
-		attribute.String("user.id", id),
+		attribute.String("user.id", in.ID),
 	)
 
-	user, err := uc.repo.FindByID(ctx, id)
+	user, err := uc.repo.FindByID(ctx, in.ID)
 	if err != nil {
-		return nil, err
+		span.RecordError(err)
+		span.SetStatus(codes.Error, "erro ao buscar usuário")
+		return users.GetUserOutput{}, err
 	}
 
 	if user == nil {
-		return nil, errors.New("utilizador não encontrado")
+		err := fmt.Errorf("usuário não encontrado")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return users.GetUserOutput{}, errors.New("usuário não encontrado")
 	}
 
-	return user, nil
+	return users.GetUserOutput{
+		ID:   user.ID,
+		Name: user.Name,
+		Address: users.UserAddress{
+			Street:  user.Address.Street,
+			City:    user.Address.City,
+			ZipCode: user.Address.ZipCode,
+		},
+	}, nil
 }
