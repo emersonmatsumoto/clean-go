@@ -2,7 +2,10 @@ module github.com/emersonmatsumoto/clean-go/payments
 
 go 1.25.3
 
+replace github.com/emersonmatsumoto/clean-go/contracts => ../contracts
+
 require (
+	github.com/emersonmatsumoto/clean-go/contracts v0.0.0
 	github.com/stripe/stripe-go/v84 v84.1.0
 	go.opentelemetry.io/otel v1.39.0
 )

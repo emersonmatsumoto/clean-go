@@ -2,7 +2,10 @@ module github.com/emersonmatsumoto/clean-go/products
 
 go 1.25.3
 
+replace github.com/emersonmatsumoto/clean-go/contracts => ../contracts
+
 require (
+	github.com/emersonmatsumoto/clean-go/contracts v0.0.0
 	github.com/testcontainers/testcontainers-go/modules/mongodb v0.40.0
 	go.mongodb.org/mongo-driver/v2 v2.4.1
 	go.opentelemetry.io/otel v1.39.0

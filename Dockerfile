@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY go.work go.work.sum ./
 COPY api/ ./api/
+COPY contracts/ ./contracts/
 COPY products/ ./products/
 COPY payments/ ./payments/
 COPY orders/ ./orders/

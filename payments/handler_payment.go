@@ -3,25 +3,14 @@ package payments
 import (
 	"context"
 
+	"github.com/emersonmatsumoto/clean-go/contracts/payments"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
 
-type ProcessPaymentInput struct {
-	OrderID  string
-	Amount   float64
-	TokenID  string
-	Currency string
-}
-
-type ProcessPaymentOutput struct {
-	TransactionID string
-	Status        string
-}
-
 var tracer = otel.Tracer("github.com/emersonmatsumoto/clean-go/payments")
 
-func (c *component) ProcessPayment(ctx context.Context, in ProcessPaymentInput) (ProcessPaymentOutput, error) {
+func (c *component) ProcessPayment(ctx context.Context, in payments.ProcessPaymentInput) (payments.ProcessPaymentOutput, error) {
 	ctx, span := tracer.Start(ctx, "Payments.Component.ProcessPayment")
 	defer span.End()
 
@@ -37,7 +26,7 @@ func (c *component) ProcessPayment(ctx context.Context, in ProcessPaymentInput) 
 		attribute.String("payment.transaction_id", res.TransactionID),
 	)
 
-	return ProcessPaymentOutput{
+	return payments.ProcessPaymentOutput{
 		TransactionID: res.TransactionID,
 		Status:        status,
 	}, err

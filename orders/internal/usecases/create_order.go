@@ -5,33 +5,17 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/emersonmatsumoto/clean-go/contracts/orders"
+	"github.com/emersonmatsumoto/clean-go/contracts/payments"
+	"github.com/emersonmatsumoto/clean-go/contracts/products"
+	"github.com/emersonmatsumoto/clean-go/contracts/users"
 	"github.com/emersonmatsumoto/clean-go/orders/internal/entities"
 	"github.com/emersonmatsumoto/clean-go/orders/internal/ports"
-	"github.com/emersonmatsumoto/clean-go/payments"
-	"github.com/emersonmatsumoto/clean-go/products"
-	"github.com/emersonmatsumoto/clean-go/users"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/metric"
 )
-
-type OrderItemInput struct {
-	ProductID string
-	Quantity  int
-}
-
-type PlaceOrderInput struct {
-	UserID    string
-	Items     []OrderItemInput
-	CardToken string
-}
-
-type PlaceOrderOutput struct {
-	OrderID string
-	Total   float64
-	Status  string
-}
 
 type CreateOrderUseCase struct {
 	repo     ports.OrderRepository
@@ -58,7 +42,7 @@ var (
 	)
 )
 
-func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (PlaceOrderOutput, error) {
+func (uc *CreateOrderUseCase) Execute(ctx context.Context, in orders.PlaceOrderInput) (orders.PlaceOrderOutput, error) {
 	ctx, span := tracer.Start(ctx, "Orders.CreateOrderUseCase.Execute")
 	defer span.End()
 
@@ -66,14 +50,14 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (
 		err := fmt.Errorf("o pedido deve ter pelo menos um item")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return PlaceOrderOutput{}, err
+		return orders.PlaceOrderOutput{}, err
 	}
 
 	if in.CardToken == "" {
 		err := fmt.Errorf("token do cartão é obrigatório")
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
-		return PlaceOrderOutput{}, err
+		return orders.PlaceOrderOutput{}, err
 	}
 
 	var domainItems []entities.OrderItem
@@ -86,7 +70,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (
 				codes.Error,
 				fmt.Sprintf("produto %s não encontrado", item.ProductID),
 			)
-			return PlaceOrderOutput{}, fmt.Errorf("produto %s não encontrado", item.ProductID)
+			return orders.PlaceOrderOutput{}, fmt.Errorf("produto %s não encontrado", item.ProductID)
 		}
 
 		domainItems = append(domainItems, entities.OrderItem{
@@ -100,7 +84,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "usuário não encontrado")
-		return PlaceOrderOutput{}, errors.New("usuário não encontrado")
+		return orders.PlaceOrderOutput{}, errors.New("usuário não encontrado")
 	}
 
 	addressStr := fmt.Sprintf("%s, %s - %s", userData.Address.Street, userData.Address.City, userData.Address.ZipCode)
@@ -121,14 +105,14 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "erro ao processar pagamento")
-		return PlaceOrderOutput{}, errors.New("falha no pagamento")
+		return orders.PlaceOrderOutput{}, errors.New("falha no pagamento")
 	}
 
 	if payRes.Status != "SUCCESS" {
 		err := fmt.Errorf("pagamento recusado: %s", payRes.Status)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "pagamento recusado")
-		return PlaceOrderOutput{}, errors.New("falha no pagamento")
+		return orders.PlaceOrderOutput{}, errors.New("falha no pagamento")
 	}
 
 	order.MarkAsPaid(payRes.TransactionID)
@@ -137,7 +121,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "erro ao salvar pedido")
-		return PlaceOrderOutput{}, err
+		return orders.PlaceOrderOutput{}, err
 	}
 
 	order.SetID(orderID)
@@ -153,7 +137,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in PlaceOrderInput) (
 
 	span.SetStatus(codes.Ok, "ordem criada com sucesso")
 
-	return PlaceOrderOutput{
+	return orders.PlaceOrderOutput{
 		OrderID: order.ID,
 		Total:   order.Total,
 		Status:  order.Status,

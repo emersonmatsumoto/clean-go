@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/emersonmatsumoto/clean-go/orders"
+	"github.com/emersonmatsumoto/clean-go/contracts/orders"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )

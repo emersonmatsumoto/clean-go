@@ -2,16 +2,10 @@ module github.com/emersonmatsumoto/clean-go/orders
 
 go 1.25.3
 
-replace (
-	github.com/emersonmatsumoto/clean-go/payments => ../payments
-	github.com/emersonmatsumoto/clean-go/products => ../products
-	github.com/emersonmatsumoto/clean-go/users => ../users
-)
+replace github.com/emersonmatsumoto/clean-go/contracts => ../contracts
 
 require (
-	github.com/emersonmatsumoto/clean-go/payments v0.0.0
-	github.com/emersonmatsumoto/clean-go/products v0.0.0
-	github.com/emersonmatsumoto/clean-go/users v0.0.0
+	github.com/emersonmatsumoto/clean-go/contracts v0.0.0
 	go.mongodb.org/mongo-driver/v2 v2.4.1
 	go.opentelemetry.io/otel v1.39.0
 	go.opentelemetry.io/otel/metric v1.39.0
@@ -23,7 +17,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/klauspost/compress v1.18.2 // indirect
-	github.com/stripe/stripe-go/v84 v84.1.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.2.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect

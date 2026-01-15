@@ -3,6 +3,7 @@ module github.com/emersonmatsumoto/clean-go/api
 go 1.25.3
 
 replace (
+	github.com/emersonmatsumoto/clean-go/contracts => ../contracts
 	github.com/emersonmatsumoto/clean-go/orders => ../orders
 	github.com/emersonmatsumoto/clean-go/payments => ../payments
 	github.com/emersonmatsumoto/clean-go/products => ../products
@@ -10,6 +11,7 @@ replace (
 )
 
 require (
+	github.com/emersonmatsumoto/clean-go/contracts v0.0.0
 	github.com/emersonmatsumoto/clean-go/orders v0.0.0
 	github.com/emersonmatsumoto/clean-go/payments v0.0.0
 	github.com/emersonmatsumoto/clean-go/products v0.0.0
