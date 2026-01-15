@@ -13,6 +13,7 @@ Este repositório contém um servidor HTTP minimalista com os seguintes módulos
 - `payments/` - integração com gateway de pagamento (p.ex. Stripe) e usecase de pagamento.
 - `products/` - leitura de catálogo de produtos.
 - `users/` - leitura de dados de usuário.
+ - `contracts/` - módulo com definições e contratos compartilhados (tipos, DTOs e interfaces) usados por múltiplos módulos. Projetado para expor definições comuns entre `orders`, `payments`, `products` e `users`.
 
 Cada módulo expõe um componente (factory) que é instanciado em `api/main.go`.
 
@@ -24,6 +25,7 @@ O projeto segue uma arquitetura limpa (Clean Architecture / Hexagonal):
 - Casos de uso (application logic) em `*/usecases` (alguns módulos representam as APIs que chamam esses usecases).
 - Handlers de cada módulo expõem as operações do componente.
 - `api/main.go` faz a composição: cria clientes externos (MongoDB, Stripe) e instancia componentes.
+ - Contratos e tipos compartilhados ficam em `contracts/` (módulo Go separado). Isso centraliza DTOs/contratos entre serviços e evita dependências cíclicas entre módulos.
 
 ## Principais arquivos e responsabilidades
 
@@ -33,6 +35,7 @@ O projeto segue uma arquitetura limpa (Clean Architecture / Hexagonal):
 - `payments/handler_payment.go` - handler que expõe processamento de pagamento via componente de pagamentos.
 - `products/handler_catalog.go` - handler para obter produto por ID.
 - `users/handler_user.go` - handler para obter dados de usuário.
+ - `contracts/` - pacote com tipos/contratos compartilhados entre módulos (por exemplo: DTOs, IDs, interfaces que definem port/adapter shapes). Cada módulo consome esses contratos para manter compatibilidade entre componentes.
 
 ## Endpoints principais
 
