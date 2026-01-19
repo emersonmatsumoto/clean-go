@@ -6,9 +6,6 @@ import (
 	"fmt"
 
 	"github.com/emersonmatsumoto/clean-go/contracts/orders"
-	"github.com/emersonmatsumoto/clean-go/contracts/payments"
-	"github.com/emersonmatsumoto/clean-go/contracts/products"
-	"github.com/emersonmatsumoto/clean-go/contracts/users"
 	"github.com/emersonmatsumoto/clean-go/orders/internal/entities"
 	"github.com/emersonmatsumoto/clean-go/orders/internal/ports"
 	"go.opentelemetry.io/otel"
@@ -18,14 +15,14 @@ import (
 )
 
 type CreateOrderUseCase struct {
-	repo     ports.OrderRepository
-	prodComp products.Component
-	payComp  payments.Component
-	userComp users.Component
+	repo           ports.OrderRepository
+	productGateway ports.ProductGateway
+	paymentGateway ports.PaymentGateway
+	userGateway    ports.UserGateway
 }
 
-func NewCreateOrderUseCase(r ports.OrderRepository, p products.Component, pay payments.Component, user users.Component) *CreateOrderUseCase {
-	return &CreateOrderUseCase{repo: r, prodComp: p, payComp: pay, userComp: user}
+func NewCreateOrderUseCase(r ports.OrderRepository, p ports.ProductGateway, pay ports.PaymentGateway, user ports.UserGateway) *CreateOrderUseCase {
+	return &CreateOrderUseCase{repo: r, productGateway: p, paymentGateway: pay, userGateway: user}
 }
 
 var (
@@ -63,7 +60,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in orders.PlaceOrderI
 	var domainItems []entities.OrderItem
 
 	for _, item := range in.Items {
-		p, err := uc.prodComp.GetProduct(ctx, products.GetProductInput{ID: item.ProductID})
+		p, err := uc.productGateway.GetProduct(ctx, ports.GetProductInput{ID: item.ProductID})
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(
@@ -80,7 +77,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in orders.PlaceOrderI
 		})
 	}
 
-	userData, err := uc.userComp.GetUser(ctx, users.GetUserInput{ID: in.UserID})
+	userData, err := uc.userGateway.GetUser(ctx, ports.GetUserInput{ID: in.UserID})
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, "usuário não encontrado")
@@ -95,7 +92,7 @@ func (uc *CreateOrderUseCase) Execute(ctx context.Context, in orders.PlaceOrderI
 		attribute.Float64("order.total", order.Total),
 	)
 
-	payRes, err := uc.payComp.ProcessPayment(ctx, payments.ProcessPaymentInput{
+	payRes, err := uc.paymentGateway.ProcessPayment(ctx, ports.ProcessPaymentInput{
 		OrderID:  order.ID,
 		Amount:   order.Total,
 		TokenID:  in.CardToken,
